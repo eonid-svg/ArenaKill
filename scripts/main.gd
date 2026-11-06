@@ -17,13 +17,15 @@ const NEON_CYAN := Color(0.0, 1.0, 1.0)
 const NEON_MAGENTA := Color(1.0, 0.2, 0.6)
 
 const MUSIC := preload("res://assets/sounds/music.wav")
+const MENU_BG := preload("res://assets/menu/background.png")
+const BTN_START := preload("res://assets/menu/button_start.png")
+const BTN_QUIT := preload("res://assets/menu/button_quit.png")
 
 var players: Node3D
 var spawner: MultiplayerSpawner
 
 var menu_layer: CanvasLayer
 var hud_layer: CanvasLayer
-var ip_input: LineEdit
 var hp_label: Label
 var music_player: AudioStreamPlayer
 
@@ -160,64 +162,37 @@ func _build_menu() -> void:
 	menu_layer.name = "MenuLayer"
 	add_child(menu_layer)
 
+	var bg := TextureRect.new()
+	bg.texture = MENU_BG
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	bg.stretch_mode = TextureRect.STRETCH_SCALE
+	menu_layer.add_child(bg)
+
 	var center := CenterContainer.new()
 	center.set_anchors_preset(Control.PRESET_FULL_RECT)
 	menu_layer.add_child(center)
 
-	var panel := PanelContainer.new()
-	center.add_child(panel)
-
 	var vbox := VBoxContainer.new()
-	panel.add_child(vbox)
+	vbox.add_theme_constant_override("separation", 20)
+	center.add_child(vbox)
 
-	var title := Label.new()
-	title.text = "ARENAKILL"
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 56)
-	vbox.add_child(title)
+	var start_btn := TextureButton.new()
+	start_btn.texture_normal = BTN_START
+	start_btn.pressed.connect(_on_start_pressed)
+	vbox.add_child(start_btn)
 
-	var subtitle := Label.new()
-	subtitle.text = "Cyber Grind co-op"
-	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	subtitle.add_theme_font_size_override("font_size", 18)
-	vbox.add_child(subtitle)
-
-	var gap := Control.new()
-	gap.custom_minimum_size = Vector2(0, 24)
-	vbox.add_child(gap)
-
-	var host_btn := Button.new()
-	host_btn.text = "HOST GAME"
-	host_btn.pressed.connect(_on_host_pressed)
-	vbox.add_child(host_btn)
-
-	var gap2 := Control.new()
-	gap2.custom_minimum_size = Vector2(0, 12)
-	vbox.add_child(gap2)
-
-	var join_row := HBoxContainer.new()
-	vbox.add_child(join_row)
-
-	ip_input = LineEdit.new()
-	ip_input.placeholder_text = "host IP (e.g. 192.168.1.42)"
-	ip_input.custom_minimum_size = Vector2(220, 0)
-	join_row.add_child(ip_input)
-
-	var join_btn := Button.new()
-	join_btn.text = "JOIN"
-	join_btn.pressed.connect(_on_join_pressed)
-	join_row.add_child(join_btn)
+	var quit_btn := TextureButton.new()
+	quit_btn.texture_normal = BTN_QUIT
+	quit_btn.pressed.connect(_on_quit_pressed)
+	vbox.add_child(quit_btn)
 
 
-func _on_host_pressed() -> void:
+func _on_start_pressed() -> void:
 	_start_host(DEFAULT_PORT)
 
 
-func _on_join_pressed() -> void:
-	var ip := ip_input.text.strip_edges()
-	if ip == "":
-		ip = "127.0.0.1"
-	_start_client(ip, DEFAULT_PORT)
+func _on_quit_pressed() -> void:
+	get_tree().quit()
 
 
 func _build_hud() -> void:
