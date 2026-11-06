@@ -1,10 +1,10 @@
 extends Node3D
-## Main scene + network manager.
+## Main scene: environment, arena, menu/HUD, and network manager.
 ##
 ## Usage (user args after `--`):
-##   godot --path . -- --host            # start a LAN server
-##   godot --path . -- --join 1.2.3.4    # join a server at 1.2.3.4
-## With no args, defaults to hosting so a lone run just works.
+##   godot --path . -- --host            # start a LAN server immediately
+##   godot --path . -- --join 1.2.3.4    # join immediately
+## With no args, shows the menu (Host / Join).
 
 const PLAYER_SCENE := preload("res://scenes/player.tscn")
 const DEFAULT_PORT := 7000
@@ -16,13 +16,23 @@ const WALL_HEIGHT := 4.0
 const NEON_CYAN := Color(0.0, 1.0, 1.0)
 const NEON_MAGENTA := Color(1.0, 0.2, 0.6)
 
+const MUSIC := preload("res://assets/sounds/music.wav")
+
 var players: Node3D
 var spawner: MultiplayerSpawner
+
+var menu_layer: CanvasLayer
+var hud_layer: CanvasLayer
+var ip_input: LineEdit
+var hp_label: Label
+var music_player: AudioStreamPlayer
 
 
 func _ready() -> void:
 	_build_environment()
 	_build_arena()
+	_build_hud()
+	_build_music()
 	_setup_networking()
 
 
@@ -82,10 +92,12 @@ func _setup_networking() -> void:
 	elif join_ip != "":
 		_start_client(join_ip, DEFAULT_PORT)
 	else:
-		_start_host(DEFAULT_PORT)
+		_build_menu()
 
 
 func _start_host(port: int) -> void:
+	if menu_layer:
+		menu_layer.visible = false
 	var peer := ENetMultiplayerPeer.new()
 	var err := peer.create_server(port)
 	if err != OK:
@@ -96,9 +108,12 @@ func _start_host(port: int) -> void:
 	multiplayer.peer_disconnected.connect(_on_peer_disconnected)
 	print("[net] hosting on port %d" % port)
 	_on_peer_connected(1)  # spawn the host's own player
+	_enter_game()
 
 
 func _start_client(ip: String, port: int) -> void:
+	if menu_layer:
+		menu_layer.visible = false
 	var peer := ENetMultiplayerPeer.new()
 	var err := peer.create_client(ip, port)
 	if err != OK:
@@ -106,6 +121,14 @@ func _start_client(ip: String, port: int) -> void:
 		return
 	multiplayer.multiplayer_peer = peer
 	print("[net] connecting to %s:%d" % [ip, port])
+	_enter_game()
+
+
+func _enter_game() -> void:
+	if hud_layer:
+		hud_layer.visible = true
+	if music_player:
+		music_player.play()
 
 
 func _on_peer_connected(peer_id: int) -> void:
@@ -130,6 +153,99 @@ func _spawn_player(data) -> Node:
 func _random_spawn_point() -> Vector3:
 	var r := ARENA_HALF * 0.7
 	return Vector3(randf_range(-r, r), 1.0, randf_range(-r, r))
+
+
+func _build_menu() -> void:
+	menu_layer = CanvasLayer.new()
+	menu_layer.name = "MenuLayer"
+	add_child(menu_layer)
+
+	var center := CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	menu_layer.add_child(center)
+
+	var panel := PanelContainer.new()
+	center.add_child(panel)
+
+	var vbox := VBoxContainer.new()
+	panel.add_child(vbox)
+
+	var title := Label.new()
+	title.text = "ARENAKILL"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 56)
+	vbox.add_child(title)
+
+	var subtitle := Label.new()
+	subtitle.text = "Cyber Grind co-op"
+	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	subtitle.add_theme_font_size_override("font_size", 18)
+	vbox.add_child(subtitle)
+
+	var gap := Control.new()
+	gap.custom_minimum_size = Vector2(0, 24)
+	vbox.add_child(gap)
+
+	var host_btn := Button.new()
+	host_btn.text = "HOST GAME"
+	host_btn.pressed.connect(_on_host_pressed)
+	vbox.add_child(host_btn)
+
+	var gap2 := Control.new()
+	gap2.custom_minimum_size = Vector2(0, 12)
+	vbox.add_child(gap2)
+
+	var join_row := HBoxContainer.new()
+	vbox.add_child(join_row)
+
+	ip_input = LineEdit.new()
+	ip_input.placeholder_text = "host IP (e.g. 192.168.1.42)"
+	ip_input.custom_minimum_size = Vector2(220, 0)
+	join_row.add_child(ip_input)
+
+	var join_btn := Button.new()
+	join_btn.text = "JOIN"
+	join_btn.pressed.connect(_on_join_pressed)
+	join_row.add_child(join_btn)
+
+
+func _on_host_pressed() -> void:
+	_start_host(DEFAULT_PORT)
+
+
+func _on_join_pressed() -> void:
+	var ip := ip_input.text.strip_edges()
+	if ip == "":
+		ip = "127.0.0.1"
+	_start_client(ip, DEFAULT_PORT)
+
+
+func _build_hud() -> void:
+	hud_layer = CanvasLayer.new()
+	hud_layer.name = "HudLayer"
+	hud_layer.visible = false
+	add_child(hud_layer)
+
+	var cross := Label.new()
+	cross.text = "+"
+	cross.add_theme_font_size_override("font_size", 36)
+	cross.set_anchors_preset(Control.PRESET_CENTER)
+	hud_layer.add_child(cross)
+
+	hp_label = Label.new()
+	hp_label.text = "HP 100"
+	hp_label.add_theme_font_size_override("font_size", 22)
+	hp_label.position = Vector2(20, 20)
+	hud_layer.add_child(hp_label)
+
+
+func _build_music() -> void:
+	music_player = AudioStreamPlayer.new()
+	var s := preload("res://assets/sounds/music.wav") as AudioStreamWAV
+	s.loop_mode = AudioStreamWAV.LOOP_FORWARD
+	music_player.stream = s
+	music_player.volume_db = -8.0
+	add_child(music_player)
 
 
 func _build_arena() -> void:

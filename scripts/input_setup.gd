@@ -14,6 +14,7 @@ func _setup_actions() -> void:
 	_key_action("jump", KEY_SPACE)
 	_key_action("sprint", KEY_SHIFT)
 	_key_action("dash", KEY_CTRL)
+	_key_action("slam", KEY_C)
 	_key_action("shoot", KEY_F)  # primary fire is mouse left too, added below
 	_mouse_action("shoot", MOUSE_BUTTON_LEFT)
 	_key_action("reload", KEY_R)
