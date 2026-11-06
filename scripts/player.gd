@@ -40,6 +40,18 @@ func _build_body() -> void:
 	var cap_mesh := CapsuleMesh.new()
 	cap_mesh.radius = 0.35
 	cap_mesh.height = 1.8
+	var mat := StandardMaterial3D.new()
+	if is_multiplayer_authority():
+		mat.albedo_color = Color(0.05, 0.5, 0.6)
+		mat.emission = Color(0.0, 0.9, 1.0)
+	else:
+		mat.albedo_color = Color(0.6, 0.3, 0.05)
+		mat.emission = Color(1.0, 0.5, 0.0)
+	mat.metallic = 0.3
+	mat.roughness = 0.25
+	mat.emission_enabled = true
+	mat.emission_energy_multiplier = 1.5
+	cap_mesh.material = mat
 	mesh.mesh = cap_mesh
 	mesh.position = Vector3(0, 0.9, 0)
 	add_child(mesh)
