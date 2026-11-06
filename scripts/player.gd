@@ -1,8 +1,7 @@
 extends CharacterBody3D
 ## First-person player controller with dash + slam movement.
 
-const WALK_SPEED := 6.0
-const SPRINT_SPEED := 10.5
+const MOVE_SPEED := 9.0
 const JUMP_VELOCITY := 5.5
 const MOUSE_SENS := 0.003
 const ACCEL_GROUND := 16.0
@@ -170,7 +169,7 @@ func _physics_process(delta: float) -> void:
 			coyote_timer = 0.0
 			snd_jump.play()
 
-		var speed := SPRINT_SPEED if Input.is_action_pressed("sprint") else WALK_SPEED
+		var speed := MOVE_SPEED
 		var accel := ACCEL_GROUND if is_on_floor() else ACCEL_AIR
 		var target := dir * speed
 		velocity.x = move_toward(velocity.x, target.x, accel * delta)
