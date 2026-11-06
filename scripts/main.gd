@@ -97,20 +97,27 @@ func _random_spawn_point() -> Vector3:
 
 
 func _build_arena() -> void:
-	_add_box(Vector3(0, -0.5, 0), Vector3(ARENA_HALF * 2, 1, ARENA_HALF * 2), Color(0.14, 0.14, 0.17))
+	# Transparent (see-through) floor.
+	_add_box(Vector3(0, -0.5, 0), Vector3(ARENA_HALF * 2, 1, ARENA_HALF * 2), Color(0.2, 0.2, 0.25, 0.4), true)
+
+	# Two black walls (along Z axis).
+	var black := Color(0.05, 0.05, 0.06)
 	var wall_size := Vector3(ARENA_HALF * 2, WALL_HEIGHT, 1)
-	_add_box(Vector3(0, WALL_HEIGHT * 0.5, -ARENA_HALF - 0.5), wall_size, Color(0.22, 0.22, 0.27))
-	_add_box(Vector3(0, WALL_HEIGHT * 0.5, ARENA_HALF + 0.5), wall_size, Color(0.22, 0.22, 0.27))
+	_add_box(Vector3(0, WALL_HEIGHT * 0.5, -ARENA_HALF - 0.5), wall_size, black)
+	_add_box(Vector3(0, WALL_HEIGHT * 0.5, ARENA_HALF + 0.5), wall_size, black)
+
+	# Two grey walls (along X axis).
+	var grey := Color(0.55, 0.55, 0.6)
 	var wall_side := Vector3(1, WALL_HEIGHT, ARENA_HALF * 2)
-	_add_box(Vector3(-ARENA_HALF - 0.5, WALL_HEIGHT * 0.5, 0), wall_side, Color(0.22, 0.22, 0.27))
-	_add_box(Vector3(ARENA_HALF + 0.5, WALL_HEIGHT * 0.5, 0), wall_side, Color(0.22, 0.22, 0.27))
+	_add_box(Vector3(-ARENA_HALF - 0.5, WALL_HEIGHT * 0.5, 0), wall_side, grey)
+	_add_box(Vector3(ARENA_HALF + 0.5, WALL_HEIGHT * 0.5, 0), wall_side, grey)
 
 	var sun := DirectionalLight3D.new()
 	sun.rotation_degrees = Vector3(-50, -30, 0)
 	add_child(sun)
 
 
-func _add_box(pos: Vector3, size: Vector3, color: Color) -> void:
+func _add_box(pos: Vector3, size: Vector3, color: Color, transparent: bool = false) -> void:
 	var body := StaticBody3D.new()
 	body.position = pos
 	var col := CollisionShape3D.new()
@@ -124,6 +131,8 @@ func _add_box(pos: Vector3, size: Vector3, color: Color) -> void:
 	box_mesh.size = size
 	var mat := StandardMaterial3D.new()
 	mat.albedo_color = color
+	if transparent:
+		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	box_mesh.material = mat
 	mesh.mesh = box_mesh
 	body.add_child(mesh)
